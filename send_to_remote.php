@@ -2,6 +2,7 @@
 // Network Rail Stomp Handler example by ian13
 $server = "tcp://datafeeds.networkrail.co.uk:61618";
 include 'settings.php';
+
 $channel = "TRAIN_MVT_ALL_TOC";
 $timeout =0;
 date_default_timezone_set('UTC');
@@ -25,7 +26,7 @@ function boolString($bValue = false) {                      // returns string
 $curl_option_defaults = array(
     CURLOPT_HEADER => false,
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_TIMEOUT => 2
+    CURLOPT_TIMEOUT => 20
   ); 
 
 // Generic Curl REST function.
@@ -52,15 +53,26 @@ function curl_rest($method,$uri,$query=NULL,$json=NULL,$options=NULL){
        'Content-Length: ' . strlen( $json ) ),
     CURLOPT_INFILE => $fd,
     CURLOPT_INFILESIZE => strlen( $json ),
+    CURLOPT_RETURNTRANSFER => true,
   ); 
   curl_setopt_array($curl_handle,($options + $curl_option_defaults)); 
 
   // send request and wait for response
-  $response =  json_decode(curl_exec($curl_handle),true);
+  $response =  curl_exec($curl_handle);
   fclose( $fd );
-  echo "Response from DB: \n";
+  echo "Response from DB: ". gettype( $response ). "\n";
+  if( gettype( $response ) == "string" ){
+      print( $response );
+  }
+  if( gettype( $response ) == "boolean" ){
+      echo curl_error( $curl_handle );
+  }
   print_r($response);
-  
+  if( gettype( $response ) == 'string' ){
+      if( strpos( $response, 'Deadlock' ) != FALSE ){
+      	  return false;
+      }
+  }  
   return($response);
 }
 
@@ -83,7 +95,10 @@ while($con && ($timeout == 0 || time() < $timeout ) ){
        $msg = $con->readFrame();
        if( $msg != false ){
        	   print ("start .." );
-	   curl_rest( "POST", $website_post ,NULL, $msg->body );
+	   if( curl_rest( "POST", $website_post ,NULL, $msg->body ) == false ){
+	       print( "retrying\n" );
+	       curl_rest( "POST", $website_post ,NULL, $msg->body );
+	   }
 	   foreach (json_decode($msg->body) as $event) {
 	       print( date("F j, Y, g:i a" ) . " type " . $event->header->msg_type . " " . $event->body->train_id  );
 	       if( $event->header->msg_type == "0003" ){

@@ -1,10 +1,13 @@
 <?php
+include 'settings_server.php';
 
 require_once("phpcoord-2.3.php"); # convert easting, northing to lat long
-
-$db = new SQLite3('train_progress.db' );
-$db->exec('CREATE TABLE IF NOT EXISTS Stations (TiplocCode TEXT, CrsCode TEXT, StationName TEXT, Easting TEXT, NORTHING TEXT, Lat REAL, Long REAL );');
-$db->exec( 'CREATE INDEX IF NOT EXISTS idx_stations_crscode ON Stations (crsCode );' );
+$db = NULL;
+try {
+      $db = new PDO(  $sql_dsn, $sql_user, $sql_pass );
+} catch ( PDOException $e ) {
+  echo 'connection Failed: ' . $e->GetMessage();
+}
 
 $row = 1;
 # from  http://data.gov.uk/dataset/naptan
@@ -19,7 +22,7 @@ if (($handle = fopen("RailReferences.csv", "r")) !== FALSE) {
 #        for ($c=0; $c < $num; $c++) {
 #            echo $data[$c] . "<br />\n";
 #        }
-	$stmt = $db->prepare( 'INSERT INTO Stations (TiplocCode, CrsCode, StationName, Easting, Northing, Lat, Long ) VALUES ( ?,?,?,  ?,?,  ?,? );' );
+	$stmt = $db->prepare( 'INSERT INTO Stations (TiplocCode, CrsCode, StationName, Easting, Northing, Lat, Long_ ) VALUES ( ?,?,?,  ?,?,  ?,? );' );
 	$stmt->bindValue( 1, $data[1] );
 	$stmt->bindValue( 2, $data[2] );
 	$stmt->bindValue( 3, $data[3] );

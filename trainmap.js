@@ -12,12 +12,24 @@ require(["dojo/ready",
 	 "dojo/dom",
 	 "dojo/date",
 	 "dojo/domReady!" ], function(ready, Map,GeometryFeature, Point, GfxLayer, LineString, Layer, domConstruct, jrest, timething,on, dom, ddate ){
+
 	ready(function(){
+	    if (typeof Date.now == "undefined") {
+		    Date.now = function(){return new Date().getTime()};
+	    }
+	    var delayDiv = 3000;
+	    var startDiv = 0;
 		function bound(x, fm ) {
 		    var trainDetails = function(e){
+			if( startDiv + delayDiv > Date.now() ){
+			    return; // only delayDiv msecs since put up div.
+			}
+			startDiv = Date.now();
+			domConstruct.destroy( "traintipdiv" );
+
 			layer.removeFeature( wayPoints );
 			wayPoints = new  Array();
-			var p = new Point({x: x.Long, y: x.Lat});
+			var p = new Point({x: Number( x.long_) , y:Number( x.Lat) });
 			// create a GeometryFeature
 			var f = new GeometryFeature(p);
 			f.setFill([ 255,0,0 ]);
@@ -26,17 +38,6 @@ require(["dojo/ready",
 				r : 10
 				    });
 			wayPoints[ wayPoints.length] = f;
-			layer.addFeature( f );
-			p = new Point({x: x.next_long, y: x.next_Lat});
-			// create a GeometryFeature
-			f = new GeometryFeature(p);
-			f.setFill([ 0,255,0 ]);
-			f.setStroke([ 0, 0, 0 ]);
-			f.setShapeProperties({
-				r : 10
-				    });
-			wayPoints[ wayPoints.length] = f;
-			
 			layer.addFeature( f );
 			layer.redraw();
 			var bg = domConstruct.create( "div", {
@@ -69,7 +70,7 @@ require(["dojo/ready",
 				    var tr = dojo.create( 'tr', {} , tbody );
 				    dojo.create( 'td', { innerHTML : r[i].Name} , tr );
 				    dojo.create( 'td', { innerHTML : r[i].tme || "" } , tr );
-				    journey[journey.length] = { name: r[i].Name, x: r[i].long, y: r[i].lat };
+				    journey[journey.length] = { name: r[i].Name, x: Number(r[i].long_), y: Number(r[i].lat) };
 				}
 				var lns = new LineString( journey );
 				var f = new GeometryFeature( lns );
@@ -77,12 +78,26 @@ require(["dojo/ready",
 				
 				layer.addFeature( f );
 				wayPoints[wayPoints.length ] = f;
+				p = new Point({x: Number(r[r.length-1].long_), y: Number(r[r.length-1].lat) });
+				// create a GeometryFeature
+				f = new GeometryFeature(p);
+				f.setFill([ 0,255,0 ]);
+				f.setStroke([ 0, 0, 0 ]);
+				f.setShapeProperties({
+					r : 10
+				    });
+				wayPoints[ wayPoints.length] = f;
+			
+				layer.addFeature( f );
 				layer.redraw();
 			    });
 		    }
 			    
 		    fm.mouseover = on( fm.feature.getShape().getEventSource(),"mouseover", trainDetails );
 		    var trainRemove = function(e){
+			if( startDiv + delayDiv > Date.now() ){
+			    return; // only 5 secs since put up div.
+			}
 			domConstruct.destroy( "traintipdiv" );
 			layer.removeFeature( wayPoints );
 			wayPoints = new Array();
@@ -95,11 +110,8 @@ require(["dojo/ready",
 		function toMinutes( tme ){
 		    return parseInt( tme.substring( 0,2 )) * 60 + parseInt(tme.substring(2,4) );
 		}
-		if (typeof Date.now == "undefined") {
-		    Date.now = function(){return new Date().getTime()};
-		}
-
 		map = new Map("map", { baseLayerType : dojox.geo.openlayers.BaseLayerType.Transport } );
+//      		map = new Map("map", { baseLayerType : dojox.geo.openlayers.BaseLayerType.GOOGLE } );
 		map.fitTo([ -3, 55, 3, 48]);
 
 		map.olMap.events.register( "click", map.olMap, function (e) {
@@ -161,8 +173,8 @@ require(["dojo/ready",
 			//    proportion = elapsed / len;
 			//}
 
-			var lng = item[i].Long;
-			var lat = item[i].Lat;
+			var lng = Number( item[i].long_ );
+			var lat = Number( item[i].Lat );
 			var addFeature = true;
 			if( item[i].id in featureMap  ){
 			    var x = featureMap[ item[i].id ];
@@ -186,7 +198,7 @@ require(["dojo/ready",
 			    }
 			}		
 			if( addFeature == true ){
-			    p = new Point({x: lng, y: lat});
+			    p = new dojox.geo.openlayers.Point({x : lng, y: lat } );
 			    // create a GeometryFeature
 			    f = new GeometryFeature(p);
 			    var toc_id = item[i].toc_id;

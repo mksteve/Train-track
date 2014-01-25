@@ -1,8 +1,8 @@
 <?php
 // Network Rail Stomp Handler example by ian13
 $server = "tcp://datafeeds.networkrail.co.uk:61618";
-$user = "***********";
-$password = "***********";
+include 'settings.php';
+
 $channel = "TRAIN_MVT_ALL_TOC";
 $timeout =0;
 if( count($argv) > 1 )
@@ -27,7 +27,7 @@ $db->exec( 'CREATE INDEX IF NOT EXISTS idx_wayPoints_id ON WayPoints (id );' );
  
 $con = 0;
 try {
-    $con = new Stomp($server, $user, $password, array('client-id' => 'steve@hearnden.org.uk') );
+    $con = new Stomp($server, $netrail_user, $netrail_password, array('client-id' => $netrail_user ) );
 }
 catch ( StompException $e ){
       var_dump( $e);
@@ -36,7 +36,7 @@ if (!$con) {
    die('Connection failed: ' . stomp_connect_error());
 }
  
-$con->subscribe("/topic/" . $channel,array('activemq.subscriptionName' => 'steve@hearnden.org.uk2') );
+$con->subscribe("/topic/" . $channel,array('activemq.subscriptionName' => 'test') );
 # $db->busyTimeout( 5000 );
 while($con && ($timeout == 0 || time() < $timeout ) ){
    if ($con->hasFrame()){
