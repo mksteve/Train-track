@@ -41,8 +41,7 @@ print_r( $db->errorInfo() );
 $db->exec( 'INSERT INTO Segments2 (sched_seq, sch_id, type, tiploc, tme, stanox ) ' .
 	   ' SELECT sg.sched_seq, sg.sch_id, sg.type, sg.tiploc, sg.tme, sta.stanox FROM ' .
 	   '  Segments AS sg ' .
-	   '  JOIN Stations2 as sta ON sta.TiplocCode = sg.tiploc ' .
-	   ' WHERE sg.tme IS NOT NULL;' );
+	   '  JOIN Stations2 as sta ON sta.TiplocCode = sg.tiploc;' );
 print_r( $db->errorInfo() );
 $db->exec( 'INSERT INTO helper ( sch_id, seq_id, stanox ) SELECT sch_id, sched_seq, stanox FROM Segments2;' );
 print_r( $db->errorInfo() );

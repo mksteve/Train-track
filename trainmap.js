@@ -20,6 +20,15 @@ require(["dojo/ready",
 	    var delayDiv = 3000;
 	    var startDiv = 0;
 		function bound(x, fm ) {
+		    var trainRemove = function(e){
+			if( startDiv + delayDiv > Date.now() ){
+			    return; // only 5 secs since put up div.
+			}
+			domConstruct.destroy( "traintipdiv" );
+			layer.removeFeature( wayPoints );
+			wayPoints = new Array();
+		    }
+
 		    var trainDetails = function(e){
 			if( startDiv + delayDiv > Date.now() ){
 			    return; // only delayDiv msecs since put up div.
@@ -59,6 +68,14 @@ require(["dojo/ready",
 				    role:'alert'
 				}
 			    }, bg);   
+			var cls = domConstruct.create( "button", {
+				innerHTML : 'X',
+			        onclick : function(e) {
+				    domConstruct.destroy( "traintipdiv" );
+				    layer.removeFeature( wayPoints );
+				    wayPoints = new Array();
+				} }, fg );
+
 			var train_times = new jrest({
 				target: "./train_.php/vwTrainTimeTableAll/"
 			    });
@@ -66,10 +83,30 @@ require(["dojo/ready",
 				var table = dojo.create('table', {}, fg);
 				var tbody = dojo.create('tbody', {}, table); // a version of IE needs this or it won't render the table
 				var journey = new Array();
+				var i;
+				var done = 0;
+				for( i = 0; i < r.length; i++ ){
+				    if( r[i].stanox == x.stanox ){
+					done = i;
+					break;
+				    }
+				}
 				for( i =0; i < r.length;i++ ){
 				    var tr = dojo.create( 'tr', {} , tbody );
 				    dojo.create( 'td', { innerHTML : r[i].Name} , tr );
 				    dojo.create( 'td', { innerHTML : r[i].tme || "" } , tr );
+				    var line = ""; // for later runs.
+				    if( i == done ) {
+					line = x.WhatTime.substring(11,13) + x.WhatTime.substring( 14,16 );
+				    } else if ( i < done ){
+					if( r[i].whatTime == null ){
+					    line = "Y";
+					}else {
+					    d = new Date( r[i].whatTime*1000 );
+					    line = ("00" + d.getHours()).slice(-2) + ("00" + d.getMinutes() ).slice(-2);
+					}
+				    }
+				    dojo.create( 'td', { innerHTML : line }, tr );
 				    journey[journey.length] = { name: r[i].Name, x: Number(r[i].long_), y: Number(r[i].lat) };
 				}
 				var lns = new LineString( journey );
@@ -94,14 +131,6 @@ require(["dojo/ready",
 		    }
 			    
 		    fm.mouseover = on( fm.feature.getShape().getEventSource(),"mouseover", trainDetails );
-		    var trainRemove = function(e){
-			if( startDiv + delayDiv > Date.now() ){
-			    return; // only 5 secs since put up div.
-			}
-			domConstruct.destroy( "traintipdiv" );
-			layer.removeFeature( wayPoints );
-			wayPoints = new Array();
-		    }
 		    fm.mouseout = on( fm.feature.getShape().getEventSource(),"mouseout", trainRemove );
 		}
 

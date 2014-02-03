@@ -53,6 +53,18 @@ foreach (json_decode($msgbody) as $event) {
 	      $doReplace = false;
 	  }
       }
+      { // store all stops for a train...
+      	$stmt = $db->prepare( 'DELETE FROM  TrainStops WHERE train_id = ? AND stanox = ?;' );
+ 	$stmt->bindValue( 1, $event->body->train_id );
+	$stmt->bindValue( 2, $event->body->loc_stanox );
+	_chkExecute( $stmt );
+      	$stmt = $db->prepare( 'INSERT INTO TrainStops (train_id, stanox, whatTime, eventType ) VALUES (?,?,?,?);' );
+ 	$stmt->bindValue( 1, $event->body->train_id );
+	$stmt->bindValue( 2, $event->body->loc_stanox );
+	$stmt->bindValue( 3, $event->body->actual_timestamp / 1000 );
+	$stmt->bindValue( 4, $event->body->planned_event_type );
+	_chkExecute( $stmt );
+      }
       if( $doReplace ){
           $stmt = $db->prepare( 'DELETE FROM Trains WHERE train_id = ?;' );
           $stmt->bindValue( 1, $event->body->train_id );
@@ -140,6 +152,7 @@ foreach (json_decode($msgbody) as $event) {
  $db->exec("delete from Trains where ADDDATE(FROM_UNIXTIME(whattime), INTERVAL 12 hour) < CURRENT_TIMESTAMP();");
  $db->exec("delete from WayPoints where id NOT IN (SElECT train_id FROM Trains );");
  $db->exec("delete from WayPoints where ADDDATE( evtTime, INTERVAL 12 hour ) < CURRENT_TIMESTAMP();");
+ $db->exec("DELETE FROM Trains WHERE train_id NOT IN (SELECT train_id FROM Trains );" );
  $db->commit();
 
 
